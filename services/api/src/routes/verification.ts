@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { Router } from "express";
 import { OrderStatus, VerificationVerdict, verifyOrderSchema } from "@ordercheck/shared";
 import { prisma } from "../db.js";
@@ -54,7 +55,7 @@ verificationRouter.post(
           verdict: visionResult.verdict,
           confidence: visionResult.confidence,
           imageUrl,
-          itemResults: visionResult.itemResults,
+          itemResults: visionResult.itemResults as unknown as Prisma.InputJsonValue,
           summary: visionResult.summary,
           visionProvider: "claude-vision",
           reviewedByUserId: req.auth!.userId,
