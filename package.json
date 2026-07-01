@@ -1,0 +1,27 @@
+{
+  "name": "ordercheck",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OrderCheck - AI-powered order verification platform for restaurants",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/web",
+    "apps/mobile"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "dev:api": "npm run dev -w @ordercheck/api",
+    "dev:vision": "npm run dev -w @ordercheck/vision",
+    "dev:web": "npm run dev -w @ordercheck/web"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
