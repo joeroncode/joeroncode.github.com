@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  OWNER
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+enum OrderStatus {
+  PENDING
+  IN_PREP
+  READY_FOR_VERIFICATION
+  VERIFIED
+  FLAGGED
+  HANDED_OFF
+  CANCELLED
+}
+
+enum OrderChannel {
+  DINE_IN
+  TAKEOUT
+  DELIVERY
+  DRIVE_THRU
+}
+
+enum VerificationVerdict {
+  MATCH
+  MISMATCH
+  PARTIAL_MATCH
+  NEEDS_REVIEW
+}
+
+enum POSProvider {
+  SQUARE
+  TOAST
+  CLOVER
+  MOCK
+}
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users             User[]
+  locations         Location[]
+  menuItems         MenuItem[]
+  orders            Order[]
+  posIntegrations   POSIntegration[]
+}
+
+model User {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  passwordHash   String
+  name           String
+  role           Role     @default(STAFF)
+  createdAt      DateTime @default(now())
+
+  verifications VerificationEvent[]
+
+  @@unique([organizationId, email])
+  @@index([organizationId])
+}
+
+model Location {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  name           String
+  timezone       String   @default("UTC")
+  createdAt      DateTime @default(now())
+
+  orders          Order[]
+  posIntegrations POSIntegration[]
+
+  @@index([organizationId])
+}
+
+model POSIntegration {
+  id             String      @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  locationId     String
+  location       Location    @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  provider       POSProvider
+  externalLocationId String?
+  accessToken    String
+  webhookSecret  String?
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+
+  @@unique([locationId, provider])
+  @@index([organizationId])
+}
+
+model MenuItem {
+  id             String   @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  posItemId      String?
+  name           String
+  imageUrl       String?
+  category       String?
+  createdAt      DateTime @default(now())
+
+  orderItems OrderItem[]
+
+  @@index([organizationId])
+}
+
+model Order {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  locationId     String
+  location       Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  externalId     String?
+  posProvider    POSProvider  @default(MOCK)
+  channel        OrderChannel @default(TAKEOUT)
+  status         OrderStatus  @default(PENDING)
+  customerName   String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  items         OrderItem[]
+  verifications VerificationEvent[]
+
+  @@unique([locationId, posProvider, externalId])
+  @@index([organizationId, status])
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId String?
+  menuItem   MenuItem? @relation(fields: [menuItemId], references: [id])
+  name       String
+  quantity   Int      @default(1)
+  modifiers  String[] @default([])
+  notes      String?
+
+  @@index([orderId])
+}
+
+model VerificationEvent {
+  id               String              @id @default(cuid())
+  orderId          String
+  order            Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  verdict          VerificationVerdict
+  confidence       Float
+  imageUrl         String
+  itemResults      Json
+  summary          String
+  visionProvider   String
+  reviewedByUserId String?
+  reviewedBy       User?               @relation(fields: [reviewedByUserId], references: [id])
+  createdAt        DateTime            @default(now())
+
+  @@index([orderId])
+}

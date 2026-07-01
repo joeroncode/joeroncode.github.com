@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "OrderCheck",
+    "slug": "ordercheck",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "scheme": "ordercheck",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "backgroundColor": "#2563eb"
+    },
+    "assetBundlePatterns": ["**/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ordercheck.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "OrderCheck uses the camera to photograph packed orders for AI verification before handoff."
+      }
+    },
+    "android": {
+      "package": "com.ordercheck.app",
+      "permissions": ["CAMERA"]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "OrderCheck uses the camera to photograph packed orders for AI verification before handoff."
+        }
+      ]
+    ]
+  }
+}

@@ -1,0 +1,58 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ordercheck
+      POSTGRES_PASSWORD: ordercheck
+      POSTGRES_DB: ordercheck
+    ports:
+      - "5432:5432"
+    volumes:
+      - ordercheck_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ordercheck"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://ordercheck:ordercheck@postgres:5432/ordercheck
+      JWT_SECRET: dev-only-insecure-secret-change-me
+      VISION_SERVICE_URL: http://vision:4100
+      CORS_ORIGIN: http://localhost:5173
+      PORT: 4000
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      vision:
+        condition: service_started
+
+  vision:
+    build:
+      context: .
+      dockerfile: services/vision/Dockerfile
+    environment:
+      VISION_PROVIDER: mock
+      PORT: 4100
+    ports:
+      - "4100:4100"
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    environment:
+      VITE_API_URL: http://localhost:4000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+
+volumes:
+  ordercheck_postgres_data:
