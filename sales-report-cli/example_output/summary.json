@@ -1,0 +1,83 @@
+{
+  "totals": {
+    "total_revenue": 3290.27,
+    "total_valid_orders": 16,
+    "total_units_sold": 44,
+    "average_order_value": 205.64
+  },
+  "revenue_by_product": [
+    {
+      "product": "Monitor Stand",
+      "revenue": 2697.99,
+      "units": 3
+    },
+    {
+      "product": "Usb-C Cable",
+      "revenue": 187.5,
+      "units": 15
+    },
+    {
+      "product": "Keyboard",
+      "revenue": 180.0,
+      "units": 4
+    },
+    {
+      "product": "Wireless Mouse",
+      "revenue": 119.94,
+      "units": 6
+    },
+    {
+      "product": "Notebook",
+      "revenue": 74.85,
+      "units": 15
+    },
+    {
+      "product": "Desk Lamp",
+      "revenue": 29.99,
+      "units": 1
+    }
+  ],
+  "revenue_by_month": [
+    {
+      "month": "2026-01",
+      "revenue": 1706.41
+    },
+    {
+      "month": "2026-02",
+      "revenue": 1583.86
+    }
+  ],
+  "top_customers": [
+    {
+      "customer": "Dan Lee",
+      "revenue": 1299.0
+    },
+    {
+      "customer": "Liam Ng",
+      "revenue": 1299.0
+    },
+    {
+      "customer": "Frank Osei",
+      "revenue": 119.99
+    },
+    {
+      "customer": "Alice Johnson",
+      "revenue": 119.94
+    },
+    {
+      "customer": "(Unknown)",
+      "revenue": 99.99
+    }
+  ],
+  "data_quality": {
+    "rows_read": 21,
+    "duplicates_removed": 1,
+    "rows_skipped_total": 4,
+    "skipped_reasons": {
+      "missing_product": 1,
+      "invalid_quantity": 2,
+      "invalid_price": 1
+    },
+    "valid_rows_written": 16
+  }
+}

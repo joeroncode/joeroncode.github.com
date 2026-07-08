@@ -1,0 +1,22 @@
+order_id,date,customer,product,quantity,unit_price
+1001,2026-01-05,Alice Johnson,wireless mouse,2,19.99
+1002,01/06/2026,bob smith,USB-C Cable,3, $12.50
+1003,"Jan 7, 2026", Carla Diaz ,keyboard, 1 ,$45.00
+1004,2026-01-08,Dan Lee,Monitor Stand,1,"$1,299.00"
+1005,01/09/2026,Alice Johnson,Wireless Mouse, 1,19.99
+1005,01/09/2026,Alice Johnson,Wireless Mouse, 1,19.99
+1006,2026-01-10,Eve Turner,USB-C Cable,4,12.50
+1007,"Jan 11, 2026",Frank Osei,keyboard,2,45.00
+1008,2026-01-12,,Monitor Stand,1,99.99
+1009,2026-01-13,Grace Kim,,2,25.00
+1010,2026-01-14,Henry Park,Desk Lamp,0,29.99
+1011,2026-01-15,Ivy Chen,Desk Lamp,2,-29.99
+1012,2026-01-16,Jack Ito,Desk Lamp,abc,29.99
+1013,2026-01-16,Karen Wu,Notebook,5,4.99
+1014,02/02/2026,Bob Smith,usb-c cable,2,12.50
+1015,"Feb 3, 2026",Carla Diaz,Keyboard,1,45.00
+1016,2026-02-04,Alice Johnson,Wireless Mouse,3,19.99
+1017,02/05/2026,Liam Ng,Monitor Stand,1,1299.00
+1018,2026-02-06,Eve Turner,Notebook,10,4.99
+1019,2026-02-07,Frank Osei,Desk Lamp,1,29.99
+1020,2026-02-08,Grace Kim,USB-C Cable,6,12.50

@@ -1,0 +1,35 @@
+# Sales Summary Report
+
+## Totals
+- Total revenue: $3,290.27
+- Total valid orders: 16
+- Total units sold: 44
+- Average order value: $205.64
+
+## Revenue & Units by Product (high to low)
+- Monitor Stand: $2,697.99 revenue, 3 units
+- Usb-C Cable: $187.50 revenue, 15 units
+- Keyboard: $180.00 revenue, 4 units
+- Wireless Mouse: $119.94 revenue, 6 units
+- Notebook: $74.85 revenue, 15 units
+- Desk Lamp: $29.99 revenue, 1 units
+
+## Revenue by Month
+- 2026-01: $1,706.41
+- 2026-02: $1,583.86
+
+## Top 5 Customers by Revenue
+1. Dan Lee: $1,299.00
+2. Liam Ng: $1,299.00
+3. Frank Osei: $119.99
+4. Alice Johnson: $119.94
+5. (Unknown): $99.99
+
+## Data Quality
+- Rows read from input: 21
+- Duplicate rows removed: 1
+- Invalid rows skipped: 4
+  - missing product: 1
+  - invalid quantity: 2
+  - invalid price: 1
+- Valid rows written to cleaned_sales.csv: 16
