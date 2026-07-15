@@ -1,0 +1,27 @@
+{
+  "//": "Bubblewrap config that wraps the hosted Reel PWA as an Android app for Google Play. Replace HOST and packageId, then run `bubblewrap init --manifest ./deploy/twa-manifest.json` and `bubblewrap build`. HOST must serve the app over HTTPS.",
+  "packageId": "com.example.reel",
+  "host": "reel.example.com",
+  "name": "Reel — photo scoring & slideshow",
+  "launcherName": "Reel",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#0d100e",
+  "themeColorDark": "#0d100e",
+  "navigationColor": "#0d100e",
+  "backgroundColor": "#0d100e",
+  "startUrl": "/",
+  "webManifestUrl": "https://reel.example.com/manifest.webmanifest",
+  "iconUrl": "https://reel.example.com/assets/icon-512.png",
+  "maskableIconUrl": "https://reel.example.com/assets/icon-maskable.png",
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "reel"
+  },
+  "enableNotifications": false,
+  "fallbackType": "customtabs",
+  "features": {}
+}

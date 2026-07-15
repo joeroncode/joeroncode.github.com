@@ -4,7 +4,14 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Reel — photo scoring &amp; slideshow render</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📸</text></svg>">
+  <meta name="description" content="Score a pile of photos, keep the best, cut them into a slideshow.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#0d100e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Reel">
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/icon-192.png">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <link rel="stylesheet" href="/assets/styles.css">
 </head>
 <body>
@@ -59,6 +66,47 @@
         <button id="try-samples" class="try">Try it with sample photos →</button>
         <p class="hint" id="hint">Add photos to begin.</p>
       </aside>
+    </section>
+
+    <section class="lab" aria-label="Scoring lab">
+      <div class="lab-head">
+        <h2 class="sec-head">Scoring lab</h2>
+        <label class="live"><input type="checkbox" id="live"> re-rank live</label>
+        <button id="reset-weights" class="try">reset defaults</button>
+      </div>
+      <p class="lab-sub">Tune how much each signal counts. Weights are normalized; move a slider with <b>re-rank live</b> on to watch the order change.</p>
+      <div class="weights" id="weights">
+        <div class="wctrl" data-key="content">
+          <div class="wlabel"><span>Content</span><span class="wpct" id="pct-content">35%</span></div>
+          <input type="range" min="0" max="100" value="35" id="w-content">
+          <span class="wdesc">people &amp; subjects (from the detector)</span>
+        </div>
+        <div class="wctrl" data-key="sharpness">
+          <div class="wlabel"><span>Sharpness</span><span class="wpct" id="pct-sharpness">25%</span></div>
+          <input type="range" min="0" max="100" value="25" id="w-sharpness">
+          <span class="wdesc">focus / blur (Laplacian)</span>
+        </div>
+        <div class="wctrl" data-key="exposure">
+          <div class="wlabel"><span>Exposure</span><span class="wpct" id="pct-exposure">15%</span></div>
+          <input type="range" min="0" max="100" value="15" id="w-exposure">
+          <span class="wdesc">brightness vs mid-grey</span>
+        </div>
+        <div class="wctrl" data-key="contrast">
+          <div class="wlabel"><span>Contrast</span><span class="wpct" id="pct-contrast">15%</span></div>
+          <input type="range" min="0" max="100" value="15" id="w-contrast">
+          <span class="wdesc">tonal spread</span>
+        </div>
+        <div class="wctrl" data-key="colorfulness">
+          <div class="wlabel"><span>Color</span><span class="wpct" id="pct-colorfulness">10%</span></div>
+          <input type="range" min="0" max="100" value="10" id="w-colorfulness">
+          <span class="wdesc">vividness</span>
+        </div>
+        <div class="wctrl" data-key="conf">
+          <div class="wlabel"><span>Detector confidence</span><span class="wpct" id="pct-conf">0.25</span></div>
+          <input type="range" min="5" max="90" value="25" id="w-conf">
+          <span class="wdesc">min. detection score to count a subject</span>
+        </div>
+      </div>
     </section>
 
     <section id="video-section" class="video-section" hidden aria-live="polite">

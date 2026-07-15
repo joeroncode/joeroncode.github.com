@@ -101,6 +101,34 @@ lives in `photo_video/server/web/`. No photos handy? Hit **Try it with sample
 photos** — the server generates the bundled demo set on demand (`GET /samples`)
 and scores it in one click.
 
+The UI is also an installable **PWA** (`manifest.webmanifest`, service worker,
+maskable icons) — the basis for the Google Play wrapper described in
+[`deploy/DEPLOY.md`](deploy/DEPLOY.md).
+
+### Scoring lab (experiment & test)
+
+The **Scoring lab** panel turns the app into a testbench: five sliders for the
+signal weights (content / sharpness / exposure / contrast / color) plus a
+detector-confidence slider. Flip on **re-rank live** and the ranking updates as
+you drag — the same knobs are available on the API (`content`, `sharpness`,
+`exposure`, `contrast`, `colorfulness`, `conf` form fields on `/score` and
+`/pipeline`), so you can A/B a scoring profile before baking it in.
+
+## Deploy
+
+Front end and backend are one process, so deployment is a single unit:
+
+```bash
+docker compose up --build          # -> http://localhost:8000
+# or:
+gunicorn wsgi:app --bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 180
+```
+
+The image is lean by default (OpenCV detector, no PyTorch); build with
+`--build-arg WITH_YOLO=1` to include YOLO. Full production + **Google Play
+(Trusted Web Activity)** instructions — hosting, Bubblewrap, Digital Asset
+Links — are in [`deploy/DEPLOY.md`](deploy/DEPLOY.md).
+
 ### HTTP API
 
 | Method & path        | Purpose                                             |

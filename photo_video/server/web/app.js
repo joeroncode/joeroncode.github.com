@@ -112,6 +112,45 @@ function settings() {
   const [w, h] = $("res").value.split("x");
   return { width: w, height: h, fps: $("fps").value, seconds_per_photo: $("secs").value };
 }
+
+// ---- scoring lab ------------------------------------------------------
+const WK = ["content", "sharpness", "exposure", "contrast", "colorfulness"];
+const DEFAULT_W = { content: 35, sharpness: 25, exposure: 15, contrast: 15, colorfulness: 10, conf: 25 };
+
+function weightFields() {
+  const f = {};
+  for (const k of WK) f[k] = $("w-" + k).value;
+  f.conf = ($("w-conf").value / 100).toFixed(2);
+  return f;
+}
+
+function refreshPercents() {
+  const total = WK.reduce((s, k) => s + Number($("w-" + k).value), 0) || 1;
+  for (const k of WK) {
+    $("pct-" + k).textContent = Math.round(($("w-" + k).value / total) * 100) + "%";
+  }
+  $("pct-conf").textContent = ($("w-conf").value / 100).toFixed(2);
+}
+
+let liveTimer = null;
+function scheduleLiveRescore() {
+  if (!$("live").checked || files.size === 0) return;
+  clearTimeout(liveTimer);
+  liveTimer = setTimeout(async () => {
+    const data = await run(analyzeBtn, "/score", weightFields());
+    if (data) await showResults(data.ranking, null);
+  }, 350);
+}
+
+WK.concat(["conf"]).forEach(k => {
+  $("w-" + k).addEventListener("input", () => { refreshPercents(); scheduleLiveRescore(); });
+});
+$("reset-weights").addEventListener("click", () => {
+  for (const [k, v] of Object.entries(DEFAULT_W)) $("w-" + k).value = v;
+  refreshPercents(); scheduleLiveRescore();
+});
+$("live").addEventListener("change", scheduleLiveRescore);
+refreshPercents();
 function loadImage(file) {
   if (bitmaps.has(file.name)) return Promise.resolve(bitmaps.get(file.name));
   return new Promise((res) => {
@@ -242,7 +281,7 @@ async function run(btn, url, extra) {
 }
 
 analyzeBtn.addEventListener("click", async () => {
-  const data = await run(analyzeBtn, "/score");
+  const data = await run(analyzeBtn, "/score", weightFields());
   if (data) await showResults(data.ranking, null);
 });
 
@@ -268,7 +307,7 @@ tryBtn.addEventListener("click", async () => {
     tryBtn.textContent = prev;
     tryBtn.disabled = false;
     // Score them straight away so the demo is one click.
-    const scored = await run(analyzeBtn, "/score");
+    const scored = await run(analyzeBtn, "/score", weightFields());
     if (scored) await showResults(scored.ranking, null);
   } catch (e) {
     toast("Couldn't load samples: " + e.message);
@@ -279,6 +318,14 @@ tryBtn.addEventListener("click", async () => {
 
 renderBtn.addEventListener("click", async () => {
   const s = settings();
-  const data = await run(renderBtn, "/pipeline", { top_k: $("topk").value, ...s });
+  const data = await run(renderBtn, "/pipeline",
+    { top_k: $("topk").value, ...s, ...weightFields() });
   if (data) { await showResults(data.ranking, data.selected); showVideo(data); }
 });
+
+// Register the service worker so Reel is installable (PWA / Play TWA).
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}

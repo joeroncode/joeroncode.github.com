@@ -28,6 +28,7 @@ from flask import Flask, jsonify, request, send_file, send_from_directory
 
 from ..render import RenderConfig, SlideshowRenderer
 from ..scoring import SubjectDetector, score_image
+from ..scoring.scorer import DEFAULT_WEIGHTS
 
 WEB_DIR = os.path.join(os.path.dirname(__file__), "web")
 SAMPLE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)),
@@ -67,6 +68,51 @@ def _read_uploads() -> List[Tuple[str, np.ndarray]]:
     return out
 
 
+def _weights_from_request():
+    """Optional per-request scoring weights, normalised to sum to 1.
+
+    Reads content/sharpness/exposure/contrast/colorfulness form fields;
+    returns None to fall back to the pipeline defaults when none are given.
+    """
+    from ..scoring.scorer import DEFAULT_WEIGHTS
+    keys = ("content", "sharpness", "exposure", "contrast", "colorfulness")
+    if not any(k in request.form for k in keys):
+        return None
+    raw = {}
+    for k in keys:
+        try:
+            raw[k] = max(0.0, float(request.form.get(k, DEFAULT_WEIGHTS[k])))
+        except (ValueError, TypeError):
+            raw[k] = DEFAULT_WEIGHTS[k]
+    total = sum(raw.values()) or 1.0
+    return {k: v / total for k, v in raw.items()}
+
+
+def _conf_from_request():
+    try:
+        return max(0.0, min(1.0, float(request.form["conf"])))
+    except (KeyError, ValueError, TypeError):
+        return None
+
+
+def _score_all(images):
+    """Score every image with the shared detector, honouring optional
+    per-request weights and detector confidence from the form."""
+    det = get_detector()
+    conf = _conf_from_request()
+    prev = det.conf
+    if conf is not None:
+        det.conf = conf
+    weights = _weights_from_request()
+    try:
+        scores = [score_image(img, name, detector=det, weights=weights)
+                  for name, img in images]
+    finally:
+        det.conf = prev
+    scores.sort(key=lambda s: s.score, reverse=True)
+    return det, scores, weights
+
+
 def _render_config_from_request() -> RenderConfig:
     """Build a RenderConfig from optional form fields, with defaults."""
     form = request.form
@@ -100,20 +146,17 @@ def score():
     images = _read_uploads()
     if not images:
         return jsonify({"error": "no decodable images in 'images' field"}), 400
-    det = get_detector()
-    scores = [score_image(img, name, detector=det) for name, img in images]
-    scores.sort(key=lambda s: s.score, reverse=True)
+    det, scores, weights = _score_all(images)
     return jsonify({
         "detector_backend": det.backend_detail,
         "count": len(scores),
+        "weights": weights or DEFAULT_WEIGHTS,
         "ranking": [s.summary() for s in scores],
     })
 
 
 def _render_images(images, cfg, top_k=None, min_score=0.0):
-    det = get_detector()
-    scores = [score_image(img, name, detector=det) for name, img in images]
-    scores.sort(key=lambda s: s.score, reverse=True)
+    det, scores, weights = _score_all(images)
     selected = [s for s in scores if s.score >= min_score]
     if top_k is not None:
         selected = selected[:top_k]
@@ -129,6 +172,7 @@ def _render_images(images, cfg, top_k=None, min_score=0.0):
     job = {
         "job_id": job_id,
         "detector_backend": det.backend_detail,
+        "weights": weights or DEFAULT_WEIGHTS,
         "selected": [s.path for s in selected],
         "ranking": [s.summary() for s in scores],
         "render": manifest,
@@ -211,6 +255,33 @@ def sample_file(name):
     if not os.path.isfile(os.path.join(SAMPLE_DIR, name)):
         return jsonify({"error": "unknown sample"}), 404
     return send_from_directory(SAMPLE_DIR, name)
+
+
+@app.get("/sw.js")
+def service_worker():
+    # Served from root so its control scope covers the whole app.
+    resp = send_file(os.path.join(WEB_DIR, "sw.js"), mimetype="application/javascript")
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
+@app.get("/manifest.webmanifest")
+def manifest():
+    return send_file(os.path.join(WEB_DIR, "manifest.webmanifest"),
+                     mimetype="application/manifest+json")
+
+
+@app.get("/.well-known/assetlinks.json")
+def assetlinks():
+    """Digital Asset Links for the Play/TWA wrapper.
+
+    Point PV_ASSETLINKS at a JSON file containing your app's signing
+    fingerprint to verify domain ownership (hides the Android URL bar).
+    """
+    path = os.environ.get("PV_ASSETLINKS")
+    if not path or not os.path.isfile(path):
+        return jsonify({"error": "assetlinks not configured"}), 404
+    return send_file(path, mimetype="application/json")
 
 
 @app.get("/")

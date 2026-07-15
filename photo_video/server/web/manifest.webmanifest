@@ -1,0 +1,17 @@
+{
+  "name": "Reel — photo scoring & slideshow",
+  "short_name": "Reel",
+  "description": "Score a pile of photos, keep the best, cut them into a slideshow.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0d100e",
+  "theme_color": "#0d100e",
+  "categories": ["photo", "video", "productivity"],
+  "icons": [
+    { "src": "/assets/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/assets/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/assets/icon-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

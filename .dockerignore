@@ -1,0 +1,10 @@
+.git
+__pycache__/
+*.pyc
+.pytest_cache/
+output/
+models/*.pt
+photo_video/data/sample/
+tests/
+*.md
+deploy/*.md

@@ -83,3 +83,36 @@ def test_index_serves_web_ui(client):
     r = client.get("/")
     assert r.status_code == 200
     assert b"Reel" in r.data
+
+
+def test_pwa_assets(client):
+    assert client.get("/manifest.webmanifest").status_code == 200
+    sw = client.get("/sw.js")
+    assert sw.status_code == 200
+    assert "javascript" in sw.mimetype
+    # assetlinks 404s until PV_ASSETLINKS is configured
+    assert client.get("/.well-known/assetlinks.json").status_code == 404
+
+
+def test_score_weights_change_ranking(client):
+    # A flat grey frame (no subject, low colour) vs a vivid one.
+    grey = np.full((120, 160, 3), 128, dtype=np.uint8)
+    hsv = np.zeros((120, 160, 3), np.uint8)
+    hsv[..., 0] = (np.mgrid[0:120, 0:160][1] % 180).astype(np.uint8)
+    hsv[..., 1] = 255; hsv[..., 2] = 220
+    vivid = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
+
+    def enc(a):
+        ok, b = cv2.imencode(".png", a); return io.BytesIO(b.tobytes())
+
+    data = {
+        "images": [(enc(grey), "grey.png"), (enc(vivid), "vivid.png")],
+        "content": "0", "sharpness": "0", "exposure": "0",
+        "contrast": "0", "colorfulness": "100",
+    }
+    r = client.post("/score", data=data, content_type="multipart/form-data")
+    assert r.status_code == 200
+    body = r.get_json()
+    assert body["weights"]["colorfulness"] == 1.0
+    # With colour weighted fully, the vivid image ranks first.
+    assert body["ranking"][0]["path"] == "vivid.png"
