@@ -1,4 +1,4 @@
-# Combined backend + web UI in one container.
+# Combined backend + web UI in one container, tuned for Google Cloud Run.
 #
 # Lean by default: OpenCV detector, no torch/YOLO (its COCO weights aren't
 # fetchable in many networks anyway). Enable YOLO at build time with:
@@ -8,9 +8,10 @@ FROM python:3.11-slim
 ARG WITH_YOLO=0
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1 \
-    PV_JOB_DIR=/data/jobs
+    # Cloud Run's filesystem is in-memory + ephemeral; keep jobs in /tmp.
+    PV_JOB_DIR=/tmp/pv_jobs
 
-# OpenCV runtime needs libGL and libglib; ffmpeg libs help video muxing.
+# OpenCV runtime needs libGL and libglib.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         libgl1 libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
@@ -24,9 +25,12 @@ RUN pip install --no-cache-dir -r requirements.txt gunicorn \
 COPY photo_video/ ./photo_video/
 COPY wsgi.py ./
 
-RUN mkdir -p /data/jobs
-EXPOSE 8000
+EXPOSE 8080
 
-# 2 workers, generous timeout for render jobs, warmed via wsgi import.
-CMD ["gunicorn", "wsgi:app", "--bind", "0.0.0.0:8000", \
-     "--workers", "2", "--threads", "4", "--timeout", "180"]
+# Cloud Run injects $PORT (usually 8080); default to 8000 for local runs.
+# One worker + threads keeps memory low and shares a single warmed detector.
+CMD exec gunicorn wsgi:app \
+      --bind "0.0.0.0:${PORT:-8000}" \
+      --workers "${WEB_WORKERS:-1}" \
+      --threads "${WEB_THREADS:-8}" \
+      --timeout "${WEB_TIMEOUT:-180}"

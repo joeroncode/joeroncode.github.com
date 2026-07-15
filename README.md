@@ -116,18 +116,22 @@ you drag — the same knobs are available on the API (`content`, `sharpness`,
 
 ## Deploy
 
-Front end and backend are one process, so deployment is a single unit:
+Front end and backend are one process, so deployment is a single unit. The
+container reads `$PORT` and is tuned for **Google Cloud Run**:
 
 ```bash
-docker compose up --build          # -> http://localhost:8000
-# or:
-gunicorn wsgi:app --bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 180
+docker compose up --build          # local -> http://localhost:8000
+
+# Google Cloud Run (builds the Dockerfile via Cloud Build):
+PROJECT=your-gcp-project ./deploy/cloudrun-deploy.sh
 ```
 
 The image is lean by default (OpenCV detector, no PyTorch); build with
-`--build-arg WITH_YOLO=1` to include YOLO. Full production + **Google Play
-(Trusted Web Activity)** instructions — hosting, Bubblewrap, Digital Asset
-Links — are in [`deploy/DEPLOY.md`](deploy/DEPLOY.md).
+`--build-arg WITH_YOLO=1` to include YOLO. Once it's live over HTTPS, wrap the
+PWA as an Android app for **Google Play** with `./deploy/build-twa.sh`
+(Bubblewrap Trusted Web Activity). The full path — Cloud Run deploy, custom
+domain, Bubblewrap, Digital Asset Links, Play submission — is in
+[`deploy/DEPLOY.md`](deploy/DEPLOY.md).
 
 ### HTTP API
 

@@ -1,0 +1,12 @@
+# Files not uploaded to Cloud Build by `gcloud run deploy --source .`
+.git
+.gitignore
+__pycache__/
+*.pyc
+.pytest_cache/
+output/
+models/*.pt
+photo_video/data/sample/
+tests/
+deploy/
+*.md

@@ -1,5 +1,5 @@
 {
-  "//": "Bubblewrap config that wraps the hosted Reel PWA as an Android app for Google Play. Replace HOST and packageId, then run `bubblewrap init --manifest ./deploy/twa-manifest.json` and `bubblewrap build`. HOST must serve the app over HTTPS.",
+  "//": "Bubblewrap config that wraps the hosted Reel PWA as an Android app for Google Play. Set host to your Cloud Run URL (e.g. reel-abc123-uc.a.run.app) or a mapped custom domain, set packageId, then run ./deploy/build-twa.sh. Host must serve the app over HTTPS (Cloud Run does by default).",
   "packageId": "com.example.reel",
   "host": "reel.example.com",
   "name": "Reel — photo scoring & slideshow",

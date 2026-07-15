@@ -1,103 +1,120 @@
-# Deploying Reel
+# Deploying Reel → Google Cloud Run → Google Play (TWA)
 
 Reel is one process: a Flask/gunicorn app that serves **both** the JSON API and
-the web UI (front end and backend are already combined — there is nothing to
-wire together). This guide covers running it in production and getting it onto
-**Google Play**.
+the web UI. Target chosen: **host on Google Cloud Run**, then ship to Play as a
+**Trusted Web Activity** (a thin Android wrapper around the hosted PWA).
 
-## 1. Run the combined app
+```
+   this repo ──▶ Cloud Run (HTTPS)  ──▶ PWA install
+                      │
+                      └──▶ Bubblewrap TWA ──▶ signed .aab ──▶ Play Console
+```
 
-### Docker (recommended)
+## 0. Run locally first
 
 ```bash
 docker compose up --build          # -> http://localhost:8000
-# or plain docker:
-docker build -t reel .
-docker run -p 8000:8000 -v reel-jobs:/data/jobs reel
+# or, no Docker:
+gunicorn wsgi:app --bind 0.0.0.0:8000 --workers 1 --threads 8 --timeout 180
 ```
 
-The image is lean (OpenCV detector, no PyTorch). To bake in the YOLO backend
-where model weights are reachable:
+The container reads `$PORT` (Cloud Run injects it), warms the detector at boot,
+and keeps render jobs in `/tmp` (Cloud Run's writable, in-memory FS).
+
+## 1. Deploy to Cloud Run
+
+One command (uses the repo `Dockerfile` via Cloud Build):
 
 ```bash
-docker build --build-arg WITH_YOLO=1 -t reel:yolo .
+gcloud auth login
+gcloud config set project YOUR_PROJECT
+PROJECT=YOUR_PROJECT REGION=us-central1 ./deploy/cloudrun-deploy.sh
 ```
 
-### Without Docker
+Under the hood it runs:
 
 ```bash
-pip install -r requirements.txt gunicorn
-gunicorn wsgi:app --bind 0.0.0.0:8000 --workers 2 --threads 4 --timeout 180
+gcloud run deploy reel --source . --region us-central1 \
+  --allow-unauthenticated --memory 1Gi --cpu 1 --concurrency 8 --timeout 300
 ```
 
-The detector is warmed at boot, so the first request is fast.
-
-## 2. Host it over HTTPS
-
-Google Play's web wrapper (below) requires the app to be served over **HTTPS on
-a real domain**. Put the container behind any TLS terminator:
-
-- A managed host (Cloud Run, Fly.io, Render, an EC2/VM behind Nginx/Caddy), or
-- Caddy in front of the container for automatic certificates.
-
-Once live, confirm `https://YOUR_HOST/manifest.webmanifest` and
-`https://YOUR_HOST/health` both return 200. The UI is already a PWA
-(`manifest.webmanifest` + `sw.js` + maskable icons), so Android will offer
-"Install app" directly.
-
-## 3. Package for Google Play (Trusted Web Activity)
-
-> Reality check: Play distributes **Android apps**, not a Python server. The
-> fastest path that reuses everything here is a **Trusted Web Activity** — a
-> thin Android wrapper around the hosted PWA. The scoring/render still runs on
-> your server; the Play app is the mobile front door. (A fully on-device
-> Android rewrite — TensorFlow Lite / OpenCV-Android — is a separate, much
-> larger project.)
-
-Using Google's [Bubblewrap](https://github.com/GoogleChromeLabs/bubblewrap):
+The script prints the service URL (e.g. `https://reel-abc123-uc.a.run.app`).
+Verify:
 
 ```bash
-npm i -g @bubblewrap/cli
-
-# Edit deploy/twa-manifest.json first: set "host", "packageId",
-# "webManifestUrl" and the icon URLs to your real HTTPS domain.
-bubblewrap init --manifest ./deploy/twa-manifest.json
-bubblewrap build          # produces app-release-signed.aab + a keystore
+curl https://reel-abc123-uc.a.run.app/health          # -> {"status":"ok",...}
 ```
 
-### Verify domain ownership (Digital Asset Links)
+Notes for Cloud Run:
+- **Lean image** (OpenCV only, ~600 MB) fits in 1 GiB. YOLO/PyTorch needs more —
+  build a custom image (`docker build --build-arg WITH_YOLO=1`), push to
+  Artifact Registry, and deploy with `--image` instead of `--source .`.
+- **Ephemeral FS**: rendered MP4s live in `/tmp` and are meant to be downloaded
+  right away; they don't persist across instances. That's fine for this flow.
+- **Custom domain** (optional but nicer for Play): map one with
+  `gcloud run domain-mappings create --service reel --domain reel.yourco.com`.
+  The TWA host can be either the `run.app` URL or your custom domain.
 
-`bubblewrap build` prints your signing key's SHA-256 fingerprint. Put it in an
-`assetlinks.json` and serve it at `https://YOUR_HOST/.well-known/assetlinks.json`
-so the Android URL bar is hidden:
+## 2. Package for Google Play (Trusted Web Activity)
+
+> Play distributes Android apps, not a Python server. The TWA wraps your hosted
+> PWA — scoring/render keep running on Cloud Run; the Play app is the mobile
+> front door. (A fully on-device rewrite is a separate, much larger project.)
+
+1. Edit `deploy/twa-manifest.json`: set `host`, `webManifestUrl`, and the icon
+   URLs to your Cloud Run / custom-domain HTTPS host, and choose a `packageId`
+   (e.g. `com.yourco.reel`).
+2. Build the Android bundle:
+
+   ```bash
+   ./deploy/build-twa.sh        # npx @bubblewrap/cli init + build
+   ```
+
+   Needs Node.js (Bubblewrap runs via `npx`); it will offer to install a JDK +
+   Android SDK on first run. Output: `app-release-signed.aab` and a keystore.
+
+### 3. Verify domain ownership (Digital Asset Links)
+
+`build` prints your signing key's SHA-256 fingerprint. Serve an `assetlinks.json`
+at `https://YOUR_HOST/.well-known/assetlinks.json` so Android hides the URL bar:
 
 ```json
 [{
   "relation": ["delegate_permission/common.handle_all_urls"],
   "target": {
     "namespace": "android_app",
-    "package_name": "com.example.reel",
+    "package_name": "com.yourco.reel",
     "sha256_cert_fingerprints": ["<FROM_BUBBLEWRAP_BUILD>"]
   }
 }]
 ```
 
-The app serves this automatically if you set `PV_ASSETLINKS` to the file path
-(see `photo_video/server/app.py`), or host the file at that path yourself.
+Reel already exposes the route — set `PV_ASSETLINKS` to the file's path on the
+service and redeploy:
 
-### Submit
+```bash
+gcloud run services update reel --region us-central1 \
+  --update-env-vars PV_ASSETLINKS=/tmp/assetlinks.json
+```
+
+(or bake the file into the image / mount it). Confirm:
+`curl https://YOUR_HOST/.well-known/assetlinks.json`.
+
+### 4. Submit
 
 1. Create the app in the [Play Console](https://play.google.com/console)
    (one-time $25 developer registration).
-2. Upload `app-release-signed.aab`, fill the store listing (icon, screenshots,
-   description, privacy policy), and roll out to internal/closed testing first.
+2. Upload `app-release-signed.aab`, complete the listing (icon, screenshots,
+   short/full description, **privacy policy URL**), and roll out to
+   internal/closed testing first.
 3. Promote to production once tested.
 
 ## Checklist
 
-- [ ] `docker compose up` serves the app at :8000
-- [ ] Hosted over HTTPS on a real domain; `/health` and `/manifest.webmanifest` OK
+- [ ] `docker compose up` serves the app locally
+- [ ] `./deploy/cloudrun-deploy.sh` deployed; `/health` + `/manifest.webmanifest` OK over HTTPS
+- [ ] (optional) custom domain mapped
 - [ ] `deploy/twa-manifest.json` edited with your host + packageId
-- [ ] `bubblewrap build` produced a signed `.aab`
+- [ ] `./deploy/build-twa.sh` produced a signed `.aab`
 - [ ] `/.well-known/assetlinks.json` served with the build fingerprint
 - [ ] Store listing + privacy policy ready in Play Console

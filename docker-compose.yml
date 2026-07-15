@@ -9,15 +9,11 @@ services:
     ports:
       - "8000:8000"
     environment:
-      PV_JOB_DIR: /data/jobs
-    volumes:
-      - reel-jobs:/data/jobs
+      PORT: "8000"
+      PV_JOB_DIR: /tmp/pv_jobs
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)"]
       interval: 30s
       timeout: 5s
       retries: 3
-
-volumes:
-  reel-jobs:
