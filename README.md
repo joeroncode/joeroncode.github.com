@@ -85,16 +85,26 @@ python -m photo_video score photo_video/data/sample
 # Score, pick the best 5, render a 720p slideshow
 python -m photo_video render photo_video/data/sample -o output/slideshow.mp4 -k 5
 
-# Run the HTTP backend
+# Run the HTTP backend + web UI
 python -m photo_video serve --port 8000
+# then open http://127.0.0.1:8000 in a browser
 ```
+
+### Web UI
+
+Serving the backend also serves a single-page front end at `/` (**Reel**):
+drag in photos, press **Analyze** to score and rank them — each card shows the
+composite score, the per-metric breakdown, and the detector's bounding boxes
+drawn live on the photo — then **Render slideshow** to build and play the MP4.
+It's plain HTML/CSS/JS (no build step) talking to the JSON API below, and it
+lives in `photo_video/server/web/`.
 
 ### HTTP API
 
 | Method & path        | Purpose                                             |
 |----------------------|-----------------------------------------------------|
 | `GET /health`        | liveness + active detector backend                  |
-| `GET /`              | tiny HTML upload form                               |
+| `GET /`              | the **Reel** web UI (single-page app)               |
 | `POST /score`        | rank uploaded `images`, return JSON                 |
 | `POST /render`       | render uploaded `images` into a slideshow           |
 | `POST /pipeline`     | score → select `top_k` → render                     |

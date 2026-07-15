@@ -24,13 +24,14 @@ from typing import List, Tuple
 
 import cv2
 import numpy as np
-from flask import (Flask, jsonify, request, send_file,
-                   render_template_string)
+from flask import Flask, jsonify, request, send_file
 
 from ..render import RenderConfig, SlideshowRenderer
 from ..scoring import SubjectDetector, score_image
 
-app = Flask(__name__)
+WEB_DIR = os.path.join(os.path.dirname(__file__), "web")
+
+app = Flask(__name__, static_folder=WEB_DIR, static_url_path="/assets")
 app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024  # 128 MB upload cap
 
 # Shared, lazily-built detector (loading YOLO/cascades once is expensive).
@@ -180,25 +181,9 @@ def download(job_id):
                      download_name=f"slideshow_{job_id}.mp4")
 
 
-_INDEX_HTML = """
-<!doctype html><meta charset=utf-8>
-<title>Photo → Video pipeline</title>
-<h1>Photo-scoring &amp; video-render backend</h1>
-<p>Detector backend: <b>{{ backend }}</b></p>
-<form method=post action=/pipeline enctype=multipart/form-data>
-  <p><input type=file name=images multiple accept=image/*></p>
-  <p>Top K: <input type=number name=top_k value=5 min=1></p>
-  <p><button type=submit>Score &amp; render slideshow</button></p>
-</form>
-<p>API: <code>POST /score</code>, <code>POST /render</code>,
-   <code>POST /pipeline</code> (multipart field <code>images</code>).</p>
-"""
-
-
 @app.get("/")
 def index():
-    return render_template_string(_INDEX_HTML,
-                                  backend=get_detector().backend_detail)
+    return send_file(os.path.join(WEB_DIR, "index.html"))
 
 
 def main():

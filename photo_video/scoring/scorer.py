@@ -46,6 +46,7 @@ class PhotoScore:
             "content_score": round(self.content_score, 4),
             "num_detections": len(self.detections),
             "labels": sorted({d.label for d in self.detections}),
+            "detections": [d.as_dict() for d in self.detections],
             "metrics": {
                 "sharpness_score": round(self.metrics.sharpness_score, 4),
                 "exposure_score": round(self.metrics.exposure_score, 4),

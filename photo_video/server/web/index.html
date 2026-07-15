@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reel — photo scoring &amp; slideshow render</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📸</text></svg>">
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <span class="logo" aria-hidden="true"></span>
+        <div>
+          <h1>Reel</h1>
+          <p class="tagline">Score a pile of photos, keep the best, cut them into a slideshow.</p>
+        </div>
+      </div>
+      <span class="backend" id="backend" title="Active subject detector">
+        <span class="dot"></span><span id="backend-text">connecting…</span>
+      </span>
+    </header>
+
+    <section class="stage" aria-label="Upload">
+      <label class="drop" id="drop" for="file-input" tabindex="0">
+        <input id="file-input" type="file" accept="image/*" multiple hidden>
+        <span class="drop-ico" aria-hidden="true"></span>
+        <span class="drop-title">Drop photos here</span>
+        <span class="drop-sub">or click to browse — JPG / PNG / WebP</span>
+      </label>
+
+      <aside class="controls" aria-label="Render settings">
+        <h2>Render settings</h2>
+        <div class="ctrl">
+          <label for="topk">Keep top</label>
+          <div class="ctrl-in"><input id="topk" type="number" min="1" value="5"><span class="unit">photos</span></div>
+        </div>
+        <div class="ctrl">
+          <label for="res">Resolution</label>
+          <select id="res">
+            <option value="854x480">854 × 480</option>
+            <option value="1280x720" selected>1280 × 720</option>
+            <option value="1920x1080">1920 × 1080</option>
+          </select>
+        </div>
+        <div class="ctrl">
+          <label for="secs">Hold per photo</label>
+          <div class="ctrl-in"><input id="secs" type="number" min="0.5" step="0.5" value="2.5"><span class="unit">sec</span></div>
+        </div>
+        <div class="ctrl">
+          <label for="fps">Frame rate</label>
+          <div class="ctrl-in"><input id="fps" type="number" min="1" value="30"><span class="unit">fps</span></div>
+        </div>
+        <div class="actions">
+          <button id="analyze" class="btn ghost" disabled>Analyze</button>
+          <button id="render" class="btn primary" disabled>Render slideshow</button>
+        </div>
+        <p class="hint" id="hint">Add photos to begin.</p>
+      </aside>
+    </section>
+
+    <section id="video-section" class="video-section" hidden aria-live="polite">
+      <h2 class="sec-head">Slideshow</h2>
+      <div class="video-card">
+        <video id="video" controls preload="metadata"></video>
+        <div class="video-meta" id="video-meta"></div>
+      </div>
+    </section>
+
+    <section class="results-section">
+      <div class="results-head">
+        <h2 class="sec-head">Ranked photos</h2>
+        <span class="count" id="count"></span>
+      </div>
+      <div class="results" id="results"></div>
+      <div class="empty" id="empty">
+        <p>Nothing analyzed yet. Add photos and press <b>Analyze</b> to score them,
+        or <b>Render slideshow</b> to score and build a video in one step.</p>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <span>Backend: <code>/score</code> · <code>/render</code> · <code>/pipeline</code> · <code>/download</code></span>
+      <span id="foot-note"></span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="assertive" hidden></div>
+  <script src="/assets/app.js"></script>
+</body>
+</html>
