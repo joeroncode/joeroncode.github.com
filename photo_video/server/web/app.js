@@ -20,13 +20,29 @@ fetch("/health").then(r => r.json()).then(d => {
 
 // ---- file intake ------------------------------------------------------
 function addFiles(list) {
+  let added = false;
   for (const f of list) {
     if (!f.type.startsWith("image/")) continue;
-    if (!files.has(f.name)) files.set(f.name, f);
+    if (!files.has(f.name)) { files.set(f.name, f); added = true; }
   }
+  if (added) maybeShowConsent();
   renderTray();
   syncButtons();
 }
+
+// One-time "by uploading you agree" notice, shown on first upload.
+function consentGiven() {
+  try { return localStorage.getItem("reel-consent") === "1"; }
+  catch (e) { return false; }
+}
+function acknowledgeConsent() {
+  try { localStorage.setItem("reel-consent", "1"); } catch (e) {}
+  const el = $("consent"); if (el) el.hidden = true;
+}
+function maybeShowConsent() {
+  if (!consentGiven()) $("consent").hidden = false;
+}
+$("consent-ok").addEventListener("click", acknowledgeConsent);
 
 function removeFile(name) {
   files.delete(name); bitmaps.delete(name);
@@ -264,6 +280,7 @@ function showVideo(job) {
 // ---- actions ----------------------------------------------------------
 async function run(btn, url, extra) {
   if (files.size === 0) return;
+  acknowledgeConsent();  // proceeding implies agreement to the policy
   btn.classList.add("busy"); analyzeBtn.disabled = renderBtn.disabled = true;
   try {
     const fd = formData();
