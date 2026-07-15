@@ -19,7 +19,11 @@ from __future__ import annotations
 import io
 import os
 import tempfile
+import time
 import uuid
+from collections import deque
+from functools import wraps
+from threading import Lock
 from typing import List, Tuple
 
 import cv2
@@ -30,12 +34,27 @@ from ..render import RenderConfig, SlideshowRenderer
 from ..scoring import SubjectDetector, score_image
 from ..scoring.scorer import DEFAULT_WEIGHTS
 
+
+def _env_int(name: str, default: int) -> int:
+    try:
+        return int(os.environ[name])
+    except (KeyError, ValueError):
+        return default
+
+
 WEB_DIR = os.path.join(os.path.dirname(__file__), "web")
 SAMPLE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)),
                           "data", "sample")
 
+# Abuse guards (all overridable via env). A public deployment spends real
+# compute per request, so cap how much any one caller can ask for.
+MAX_IMAGES = _env_int("PV_MAX_IMAGES", 40)          # images per request
+MAX_UPLOAD_MB = _env_int("PV_MAX_UPLOAD_MB", 64)     # total request body
+RATE_LIMIT = _env_int("PV_RATE_LIMIT", 30)          # requests per window (0=off)
+RATE_WINDOW = _env_int("PV_RATE_WINDOW", 60)         # window seconds
+
 app = Flask(__name__, static_folder=WEB_DIR, static_url_path="/assets")
-app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024  # 128 MB upload cap
+app.config["MAX_CONTENT_LENGTH"] = MAX_UPLOAD_MB * 1024 * 1024
 
 # Shared, lazily-built detector (loading YOLO/cascades once is expensive).
 _DETECTOR: SubjectDetector | None = None
@@ -44,6 +63,65 @@ JOB_DIR = os.environ.get("PV_JOB_DIR", os.path.join(tempfile.gettempdir(),
                                                     "pv_jobs"))
 os.makedirs(JOB_DIR, exist_ok=True)
 _JOBS: dict[str, dict] = {}
+
+
+class _RateLimiter:
+    """Fixed-window per-key limiter. Per-instance (fine for basic abuse
+    protection on Cloud Run); swap for Redis if you need it global."""
+
+    def __init__(self, limit: int, window: int):
+        self.limit = limit
+        self.window = window
+        self._hits: dict[str, deque] = {}
+        self._lock = Lock()
+
+    def check(self, key: str):
+        if self.limit <= 0:
+            return True, 0
+        now = time.time()
+        cutoff = now - self.window
+        with self._lock:
+            q = self._hits.setdefault(key, deque())
+            while q and q[0] < cutoff:
+                q.popleft()
+            if len(q) >= self.limit:
+                return False, int(self.window - (now - q[0])) + 1
+            q.append(now)
+            if len(self._hits) > 4096:      # opportunistic prune
+                for k in [k for k, v in self._hits.items() if not v]:
+                    self._hits.pop(k, None)
+        return True, 0
+
+
+_RATE = _RateLimiter(RATE_LIMIT, RATE_WINDOW)
+
+
+def _client_ip() -> str:
+    fwd = request.headers.get("X-Forwarded-For", "")
+    return fwd.split(",")[0].strip() if fwd else (request.remote_addr or "?")
+
+
+def rate_limited(fn):
+    """Throttle a heavy endpoint by client IP (skipped under TESTING)."""
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        if not app.config.get("TESTING"):
+            ok, retry = _RATE.check(_client_ip())
+            if not ok:
+                resp = jsonify({"error": "Too many requests — please slow down."})
+                resp.status_code = 429
+                resp.headers["Retry-After"] = str(retry)
+                return resp
+        return fn(*args, **kwargs)
+    return wrapper
+
+
+def _too_many_images():
+    """Return an error response if the request exceeds the image-count cap."""
+    n = len(request.files.getlist("images"))
+    if n > MAX_IMAGES:
+        return jsonify({"error": f"Too many images — {n} sent, max {MAX_IMAGES}."}), 413
+    return None
 
 
 def get_detector() -> SubjectDetector:
@@ -142,7 +220,11 @@ def health():
 
 
 @app.post("/score")
+@rate_limited
 def score():
+    over = _too_many_images()
+    if over:
+        return over
     images = _read_uploads()
     if not images:
         return jsonify({"error": "no decodable images in 'images' field"}), 400
@@ -183,7 +265,11 @@ def _render_images(images, cfg, top_k=None, min_score=0.0):
 
 
 @app.post("/render")
+@rate_limited
 def render():
+    over = _too_many_images()
+    if over:
+        return over
     images = _read_uploads()
     if not images:
         return jsonify({"error": "no decodable images in 'images' field"}), 400
@@ -193,7 +279,11 @@ def render():
 
 
 @app.post("/pipeline")
+@rate_limited
 def pipeline():
+    over = _too_many_images()
+    if over:
+        return over
     images = _read_uploads()
     if not images:
         return jsonify({"error": "no decodable images in 'images' field"}), 400
@@ -242,6 +332,7 @@ def _ensure_samples() -> List[str]:
 
 
 @app.get("/samples")
+@rate_limited
 def samples():
     try:
         names = _ensure_samples()
@@ -282,6 +373,11 @@ def assetlinks():
     if not path or not os.path.isfile(path):
         return jsonify({"error": "assetlinks not configured"}), 404
     return send_file(path, mimetype="application/json")
+
+
+@app.get("/privacy")
+def privacy():
+    return send_file(os.path.join(WEB_DIR, "privacy.html"))
 
 
 @app.get("/")

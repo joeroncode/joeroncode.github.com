@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Privacy Policy — Reel</title>
+  <meta name="theme-color" content="#0d100e">
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/icon-192.png">
+  <link rel="stylesheet" href="/assets/styles.css">
+  <style>
+    .doc{max-width:44rem;margin:0 auto;padding:clamp(22px,4vw,52px)}
+    .doc a.back{font-family:var(--mono);font-size:12.5px;color:var(--accent);text-decoration:none}
+    .doc h1{font-size:clamp(24px,4vw,34px);margin:18px 0 4px;letter-spacing:-.01em}
+    .doc .updated{color:var(--muted);font-size:13px;font-family:var(--mono);margin:0 0 26px}
+    .doc h2{font-size:15px;margin:30px 0 8px;color:var(--ink)}
+    .doc p,.doc li{color:var(--muted);font-size:15px;line-height:1.65}
+    .doc ul{padding-left:1.2em;display:flex;flex-direction:column;gap:6px}
+    .doc b{color:var(--ink);font-weight:600}
+    .doc .note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--warn);
+      border-radius:10px;padding:13px 16px;font-size:13.5px;margin:22px 0}
+    .doc .fill{color:var(--warn);font-family:var(--mono);font-size:.92em}
+    .doc footer{margin-top:34px;padding-top:18px;border-top:1px solid var(--line);
+      color:var(--faint);font-size:12.5px;font-family:var(--mono)}
+  </style>
+</head>
+<body>
+  <main class="doc">
+    <a class="back" href="/">← back to Reel</a>
+    <h1>Privacy Policy</h1>
+    <p class="updated">Last updated: 15 July 2026</p>
+
+    <p>Reel (“the app”) scores photos you provide and assembles the best of them
+    into a short slideshow video. This policy explains what the app does with
+    the images you upload. It is written to reflect how the app actually works.</p>
+
+    <div class="note">Operator: this template describes Reel's real data flow.
+    Before publishing, replace the <span class="fill">[bracketed]</span>
+    placeholders with your details. Google Play requires a working contact and a
+    reachable privacy-policy URL.</div>
+
+    <h2>What we collect</h2>
+    <ul>
+      <li><b>Photos you upload</b> — the images you choose to score or turn into
+      a slideshow.</li>
+      <li><b>Render settings</b> you set (e.g. resolution, number of photos,
+      scoring weights). These are plain preferences, not personal data.</li>
+    </ul>
+    <p>The app has <b>no accounts, no sign-in, and no advertising</b>. It does not
+    ask for your name, email, location, or contacts.</p>
+
+    <h2>How your photos are used</h2>
+    <ul>
+      <li>Uploaded images are sent to the server <b>only to fulfil your request</b>
+      — to compute quality scores, detect subjects, and render a slideshow.</li>
+      <li>Processing is automated. Your photos are <b>not used to train any
+      model</b>, are <b>not sold</b>, and are <b>not shared</b> with third
+      parties.</li>
+    </ul>
+
+    <h2>Retention</h2>
+    <ul>
+      <li>Uploaded images are held only in memory for the duration of the request
+      and are not written to long-term storage.</li>
+      <li>Rendered slideshow videos are stored <b>temporarily</b> so you can
+      download them, in ephemeral server storage that is cleared automatically
+      when the server instance recycles. They are meant to be downloaded right
+      away and are not retained long-term.</li>
+    </ul>
+
+    <h2>On your device</h2>
+    <p>The app is an installable web app. A <b>service worker</b> caches the
+    interface files (HTML, CSS, JavaScript, icons) on your device so it loads
+    quickly and works offline. This cache stays on your device, contains no
+    personal data, and can be cleared from your browser or by uninstalling.
+    The app sets <b>no advertising or tracking cookies</b>.</p>
+
+    <h2>Third parties &amp; hosting</h2>
+    <p>The service is hosted on cloud infrastructure
+    (<span class="fill">[your hosting provider, e.g. Google Cloud Run]</span>),
+    which processes requests on the operator's behalf. No analytics or
+    advertising SDKs are included.</p>
+
+    <h2>Children</h2>
+    <p>The app is not directed to children under 13 and does not knowingly
+    collect personal information from them.</p>
+
+    <h2>Your choices</h2>
+    <p>You control what you upload — don't upload a photo you don't want
+    processed. Because nothing is stored under an account, there is no profile to
+    delete; clearing the app's cache removes the on-device copy of the interface.
+    For any question about this policy, contact
+    <span class="fill">[operator contact email]</span>.</p>
+
+    <h2>Changes</h2>
+    <p>We may update this policy; material changes will be reflected by the
+    “Last updated” date above.</p>
+
+    <footer>Reel · operated by <span class="fill">[your organization / name]</span></footer>
+  </main>
+</body>
+</html>

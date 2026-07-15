@@ -4,7 +4,11 @@ import cv2
 import numpy as np
 import pytest
 
-from photo_video.server.app import app
+import importlib
+
+from photo_video.server.app import app, _RateLimiter
+
+appmod = importlib.import_module("photo_video.server.app")
 
 
 @pytest.fixture
@@ -116,3 +120,29 @@ def test_score_weights_change_ranking(client):
     assert body["weights"]["colorfulness"] == 1.0
     # With colour weighted fully, the vivid image ranks first.
     assert body["ranking"][0]["path"] == "vivid.png"
+
+
+def test_rate_limiter_unit():
+    rl = _RateLimiter(limit=2, window=60)
+    assert rl.check("ip")[0] is True
+    assert rl.check("ip")[0] is True
+    ok, retry = rl.check("ip")
+    assert ok is False and retry > 0
+    # A different caller is independent.
+    assert rl.check("other")[0] is True
+    # limit<=0 disables the limiter.
+    assert _RateLimiter(0, 60).check("x")[0] is True
+
+
+def test_image_count_cap(client, monkeypatch):
+    monkeypatch.setattr(appmod, "MAX_IMAGES", 1)
+    data = {"images": [(_png_bytes(), "a.png"), (_png_bytes(), "b.png")]}
+    r = client.post("/score", data=data, content_type="multipart/form-data")
+    assert r.status_code == 413
+    assert "max" in r.get_json()["error"].lower()
+
+
+def test_privacy_page(client):
+    r = client.get("/privacy")
+    assert r.status_code == 200
+    assert b"Privacy Policy" in r.data

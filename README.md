@@ -133,12 +133,27 @@ PWA as an Android app for **Google Play** with `./deploy/build-twa.sh`
 domain, Bubblewrap, Digital Asset Links, Play submission — is in
 [`deploy/DEPLOY.md`](deploy/DEPLOY.md).
 
+**Abuse guards** (it's public, so it spends real compute per request) are on by
+default and tunable via env:
+
+| Env | Default | Meaning |
+|-----|---------|---------|
+| `PV_RATE_LIMIT`   | `30` | requests per window per client IP (`0` disables) |
+| `PV_RATE_WINDOW`  | `60` | rate-limit window, seconds |
+| `PV_MAX_IMAGES`   | `40` | images per request (413 over this) |
+| `PV_MAX_UPLOAD_MB`| `64` | total request-body cap |
+
+Over-limit requests get `429` with `Retry-After`. A ready-to-fill privacy
+policy is served at `/privacy` (edit the placeholders in
+`photo_video/server/web/privacy.html`).
+
 ### HTTP API
 
 | Method & path        | Purpose                                             |
 |----------------------|-----------------------------------------------------|
 | `GET /health`        | liveness + active detector backend                  |
 | `GET /`              | the **Reel** web UI (single-page app)               |
+| `GET /privacy`       | privacy policy (Play requires a policy URL)         |
 | `GET /samples`       | list bundled demo photos (generated on demand)      |
 | `POST /score`        | rank uploaded `images`, return JSON                 |
 | `POST /render`       | render uploaded `images` into a slideshow           |

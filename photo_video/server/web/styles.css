@@ -201,6 +201,8 @@ input[type=range]::-moz-range-thumb{width:15px;height:15px;border-radius:50%;bac
 /* Footer + toast */
 .foot{margin-top:40px;padding-top:20px;border-top:1px solid var(--line);color:var(--faint);
   font-size:12.5px;display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;font-family:var(--mono)}
+.foot-link{color:var(--accent);text-decoration:none}
+.foot-link:hover{text-decoration:underline}
 .toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:20;
   background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--low);
   color:var(--ink);padding:12px 16px;border-radius:10px;box-shadow:var(--shadow);font-size:13.5px;max-width:90vw}
