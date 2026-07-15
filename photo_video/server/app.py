@@ -24,12 +24,14 @@ from typing import List, Tuple
 
 import cv2
 import numpy as np
-from flask import Flask, jsonify, request, send_file
+from flask import Flask, jsonify, request, send_file, send_from_directory
 
 from ..render import RenderConfig, SlideshowRenderer
 from ..scoring import SubjectDetector, score_image
 
 WEB_DIR = os.path.join(os.path.dirname(__file__), "web")
+SAMPLE_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                          "data", "sample")
 
 app = Flask(__name__, static_folder=WEB_DIR, static_url_path="/assets")
 app.config["MAX_CONTENT_LENGTH"] = 128 * 1024 * 1024  # 128 MB upload cap
@@ -181,6 +183,36 @@ def download(job_id):
                      download_name=f"slideshow_{job_id}.mp4")
 
 
+def _ensure_samples() -> List[str]:
+    """Return sorted sample filenames, generating the set if it's missing."""
+    exts = (".jpg", ".jpeg", ".png")
+    have = sorted(f for f in os.listdir(SAMPLE_DIR)
+                  if f.lower().endswith(exts)) if os.path.isdir(SAMPLE_DIR) else []
+    if have:
+        return have
+    # Lazily build the bundled demo set (needs scikit-image).
+    from ..data.make_samples import build_samples
+    build_samples(SAMPLE_DIR)
+    return sorted(f for f in os.listdir(SAMPLE_DIR)
+                  if f.lower().endswith(exts))
+
+
+@app.get("/samples")
+def samples():
+    try:
+        names = _ensure_samples()
+    except Exception as exc:
+        return jsonify({"error": f"sample set unavailable: {exc}"}), 503
+    return jsonify({"images": [f"/samples/{n}" for n in names]})
+
+
+@app.get("/samples/<path:name>")
+def sample_file(name):
+    if not os.path.isfile(os.path.join(SAMPLE_DIR, name)):
+        return jsonify({"error": "unknown sample"}), 404
+    return send_from_directory(SAMPLE_DIR, name)
+
+
 @app.get("/")
 def index():
     return send_file(os.path.join(WEB_DIR, "index.html"))
@@ -192,7 +224,12 @@ def main():
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
-    app.run(host=args.host, port=args.port)
+    # Build the detector once up front so the first request is fast (loading
+    # YOLO — including any download retries — otherwise blocks it).
+    det = get_detector()
+    print(f"detector backend: {det.backend_detail}")
+    print(f"serving on http://{args.host}:{args.port}")
+    app.run(host=args.host, port=args.port, threaded=True)
 
 
 if __name__ == "__main__":

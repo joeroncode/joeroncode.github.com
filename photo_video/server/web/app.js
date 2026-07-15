@@ -246,6 +246,37 @@ analyzeBtn.addEventListener("click", async () => {
   if (data) await showResults(data.ranking, null);
 });
 
+const tryBtn = $("try-samples");
+async function fetchAsFile(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(`HTTP ${r.status}`);
+  const blob = await r.blob();
+  const name = decodeURIComponent(url.split("/").pop());
+  return new File([blob], name, { type: blob.type || "image/jpeg" });
+}
+tryBtn.addEventListener("click", async () => {
+  tryBtn.disabled = true;
+  const prev = tryBtn.textContent;
+  tryBtn.textContent = "Loading sample photos…";
+  try {
+    const res = await fetch("/samples");
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+    clearFiles();
+    const loaded = await Promise.all(data.images.map(fetchAsFile));
+    addFiles(loaded);
+    tryBtn.textContent = prev;
+    tryBtn.disabled = false;
+    // Score them straight away so the demo is one click.
+    const scored = await run(analyzeBtn, "/score");
+    if (scored) await showResults(scored.ranking, null);
+  } catch (e) {
+    toast("Couldn't load samples: " + e.message);
+    tryBtn.textContent = prev;
+    tryBtn.disabled = false;
+  }
+});
+
 renderBtn.addEventListener("click", async () => {
   const s = settings();
   const data = await run(renderBtn, "/pipeline", { top_k: $("topk").value, ...s });

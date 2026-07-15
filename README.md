@@ -97,7 +97,9 @@ drag in photos, press **Analyze** to score and rank them — each card shows the
 composite score, the per-metric breakdown, and the detector's bounding boxes
 drawn live on the photo — then **Render slideshow** to build and play the MP4.
 It's plain HTML/CSS/JS (no build step) talking to the JSON API below, and it
-lives in `photo_video/server/web/`.
+lives in `photo_video/server/web/`. No photos handy? Hit **Try it with sample
+photos** — the server generates the bundled demo set on demand (`GET /samples`)
+and scores it in one click.
 
 ### HTTP API
 
@@ -105,6 +107,7 @@ lives in `photo_video/server/web/`.
 |----------------------|-----------------------------------------------------|
 | `GET /health`        | liveness + active detector backend                  |
 | `GET /`              | the **Reel** web UI (single-page app)               |
+| `GET /samples`       | list bundled demo photos (generated on demand)      |
 | `POST /score`        | rank uploaded `images`, return JSON                 |
 | `POST /render`       | render uploaded `images` into a slideshow           |
 | `POST /pipeline`     | score → select `top_k` → render                     |

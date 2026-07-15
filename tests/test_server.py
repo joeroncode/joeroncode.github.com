@@ -64,3 +64,22 @@ def test_pipeline_and_download(client):
 
 def test_download_unknown_job(client):
     assert client.get("/download/nope").status_code == 404
+
+
+def test_samples_list_and_fetch(client):
+    r = client.get("/samples")
+    # 200 with a non-empty list, or 503 if scikit-image isn't installed.
+    assert r.status_code in (200, 503)
+    if r.status_code == 200:
+        imgs = r.get_json()["images"]
+        assert imgs and all(u.startswith("/samples/") for u in imgs)
+        first = client.get(imgs[0])
+        assert first.status_code == 200
+        assert first.mimetype.startswith("image/")
+        assert client.get("/samples/../app.py").status_code in (404, 400)
+
+
+def test_index_serves_web_ui(client):
+    r = client.get("/")
+    assert r.status_code == 200
+    assert b"Reel" in r.data
