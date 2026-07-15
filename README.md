@@ -129,9 +129,11 @@ PROJECT=your-gcp-project ./deploy/cloudrun-deploy.sh
 The image is lean by default (OpenCV detector, no PyTorch); build with
 `--build-arg WITH_YOLO=1` to include YOLO. Once it's live over HTTPS, wrap the
 PWA as an Android app for **Google Play** with `./deploy/build-twa.sh`
-(Bubblewrap Trusted Web Activity). The full path — Cloud Run deploy, custom
-domain, Bubblewrap, Digital Asset Links, Play submission — is in
-[`deploy/DEPLOY.md`](deploy/DEPLOY.md).
+(Bubblewrap Trusted Web Activity).
+
+**Going live?** [`LAUNCH.md`](LAUNCH.md) is the ordered checklist (smoke test →
+Cloud Run → PWA → TWA → Digital Asset Links → Play). The longer-form background
+is in [`deploy/DEPLOY.md`](deploy/DEPLOY.md).
 
 **Abuse guards** (it's public, so it spends real compute per request) are on by
 default and tunable via env:
