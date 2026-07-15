@@ -1,0 +1,15 @@
+# Core pipeline (required)
+numpy>=1.26,<3
+opencv-python-headless>=4.9,<5   # 5.x headless drops objdetect (cascades/HOG)
+flask>=3.0,<4
+
+# Sample data: real bundled photographs (no network needed)
+scikit-image>=0.22
+
+# YOLO detector (optional). When installed AND the weights download is
+# reachable, the detector uses YOLOv8; otherwise it falls back to the
+# built-in OpenCV Haar-cascade + HOG detectors.
+# ultralytics>=8.3
+
+# Tests
+pytest>=7

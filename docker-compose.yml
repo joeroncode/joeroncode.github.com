@@ -1,0 +1,19 @@
+services:
+  reel:
+    build:
+      context: .
+      # Set WITH_YOLO=1 to bake in Ultralytics YOLO (large; needs weight access).
+      args:
+        WITH_YOLO: "0"
+    image: reel:latest
+    ports:
+      - "8000:8000"
+    environment:
+      PORT: "8000"
+      PV_JOB_DIR: /tmp/pv_jobs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

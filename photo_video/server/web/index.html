@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reel — photo scoring &amp; slideshow render</title>
+  <meta name="description" content="Score a pile of photos, keep the best, cut them into a slideshow.">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#0d100e">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Reel">
+  <link rel="icon" type="image/png" sizes="192x192" href="/assets/icon-192.png">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+  <div class="app">
+    <header class="top">
+      <div class="brand">
+        <span class="logo" aria-hidden="true"></span>
+        <div>
+          <h1>Reel</h1>
+          <p class="tagline">Score a pile of photos, keep the best, cut them into a slideshow.</p>
+        </div>
+      </div>
+      <span class="backend" id="backend" title="Active subject detector">
+        <span class="dot"></span><span id="backend-text">connecting…</span>
+      </span>
+    </header>
+
+    <section class="stage" aria-label="Upload">
+      <label class="drop" id="drop" for="file-input" tabindex="0">
+        <input id="file-input" type="file" accept="image/*" multiple hidden>
+        <span class="drop-ico" aria-hidden="true"></span>
+        <span class="drop-title">Drop photos here</span>
+        <span class="drop-sub">or click to browse — JPG / PNG / WebP</span>
+      </label>
+
+      <aside class="controls" aria-label="Render settings">
+        <h2>Render settings</h2>
+        <div class="ctrl">
+          <label for="topk">Keep top</label>
+          <div class="ctrl-in"><input id="topk" type="number" min="1" value="5"><span class="unit">photos</span></div>
+        </div>
+        <div class="ctrl">
+          <label for="res">Resolution</label>
+          <select id="res">
+            <option value="854x480">854 × 480</option>
+            <option value="1280x720" selected>1280 × 720</option>
+            <option value="1920x1080">1920 × 1080</option>
+          </select>
+        </div>
+        <div class="ctrl">
+          <label for="secs">Hold per photo</label>
+          <div class="ctrl-in"><input id="secs" type="number" min="0.5" step="0.5" value="2.5"><span class="unit">sec</span></div>
+        </div>
+        <div class="ctrl">
+          <label for="fps">Frame rate</label>
+          <div class="ctrl-in"><input id="fps" type="number" min="1" value="30"><span class="unit">fps</span></div>
+        </div>
+        <div class="actions">
+          <button id="analyze" class="btn ghost" disabled>Analyze</button>
+          <button id="render" class="btn primary" disabled>Render slideshow</button>
+        </div>
+        <button id="try-samples" class="try">Try it with sample photos →</button>
+        <p class="hint" id="hint">Add photos to begin.</p>
+      </aside>
+    </section>
+
+    <div id="consent" class="consent" hidden role="note">
+      <span>By uploading photos you agree to our
+        <a href="/privacy" target="_blank" rel="noopener">Privacy Policy</a>.
+        Images are used only to score and render your slideshow — never stored
+        long-term, shared, or used for training.</span>
+      <button id="consent-ok" class="consent-ok">Got it</button>
+    </div>
+
+    <section class="lab" aria-label="Scoring lab">
+      <div class="lab-head">
+        <h2 class="sec-head">Scoring lab</h2>
+        <label class="live"><input type="checkbox" id="live"> re-rank live</label>
+        <button id="reset-weights" class="try">reset defaults</button>
+      </div>
+      <p class="lab-sub">Tune how much each signal counts. Weights are normalized; move a slider with <b>re-rank live</b> on to watch the order change.</p>
+      <div class="weights" id="weights">
+        <div class="wctrl" data-key="content">
+          <div class="wlabel"><span>Content</span><span class="wpct" id="pct-content">35%</span></div>
+          <input type="range" min="0" max="100" value="35" id="w-content">
+          <span class="wdesc">people &amp; subjects (from the detector)</span>
+        </div>
+        <div class="wctrl" data-key="sharpness">
+          <div class="wlabel"><span>Sharpness</span><span class="wpct" id="pct-sharpness">25%</span></div>
+          <input type="range" min="0" max="100" value="25" id="w-sharpness">
+          <span class="wdesc">focus / blur (Laplacian)</span>
+        </div>
+        <div class="wctrl" data-key="exposure">
+          <div class="wlabel"><span>Exposure</span><span class="wpct" id="pct-exposure">15%</span></div>
+          <input type="range" min="0" max="100" value="15" id="w-exposure">
+          <span class="wdesc">brightness vs mid-grey</span>
+        </div>
+        <div class="wctrl" data-key="contrast">
+          <div class="wlabel"><span>Contrast</span><span class="wpct" id="pct-contrast">15%</span></div>
+          <input type="range" min="0" max="100" value="15" id="w-contrast">
+          <span class="wdesc">tonal spread</span>
+        </div>
+        <div class="wctrl" data-key="colorfulness">
+          <div class="wlabel"><span>Color</span><span class="wpct" id="pct-colorfulness">10%</span></div>
+          <input type="range" min="0" max="100" value="10" id="w-colorfulness">
+          <span class="wdesc">vividness</span>
+        </div>
+        <div class="wctrl" data-key="conf">
+          <div class="wlabel"><span>Detector confidence</span><span class="wpct" id="pct-conf">0.25</span></div>
+          <input type="range" min="5" max="90" value="25" id="w-conf">
+          <span class="wdesc">min. detection score to count a subject</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="video-section" class="video-section" hidden aria-live="polite">
+      <h2 class="sec-head">Slideshow</h2>
+      <div class="video-card">
+        <video id="video" controls preload="metadata"></video>
+        <div class="video-meta" id="video-meta"></div>
+      </div>
+    </section>
+
+    <section class="results-section">
+      <div class="results-head">
+        <h2 class="sec-head">Ranked photos</h2>
+        <span class="count" id="count"></span>
+      </div>
+      <div class="results" id="results"></div>
+      <div class="empty" id="empty">
+        <p>Nothing analyzed yet. Add photos and press <b>Analyze</b> to score them,
+        or <b>Render slideshow</b> to score and build a video in one step.</p>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <span>Backend: <code>/score</code> · <code>/render</code> · <code>/pipeline</code> · <code>/download</code></span>
+      <span><a href="/privacy" class="foot-link">Privacy</a> · <span id="foot-note"></span></span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="assertive" hidden></div>
+  <script src="/assets/app.js"></script>
+</body>
+</html>

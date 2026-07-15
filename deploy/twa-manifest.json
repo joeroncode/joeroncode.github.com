@@ -1,0 +1,27 @@
+{
+  "//": "Bubblewrap config that wraps the hosted Reel PWA as an Android app for Google Play. Set host to your Cloud Run URL (e.g. reel-abc123-uc.a.run.app) or a mapped custom domain, set packageId, then run ./deploy/build-twa.sh. Host must serve the app over HTTPS (Cloud Run does by default).",
+  "packageId": "com.example.reel",
+  "host": "reel.example.com",
+  "name": "Reel — photo scoring & slideshow",
+  "launcherName": "Reel",
+  "display": "standalone",
+  "orientation": "portrait",
+  "themeColor": "#0d100e",
+  "themeColorDark": "#0d100e",
+  "navigationColor": "#0d100e",
+  "backgroundColor": "#0d100e",
+  "startUrl": "/",
+  "webManifestUrl": "https://reel.example.com/manifest.webmanifest",
+  "iconUrl": "https://reel.example.com/assets/icon-512.png",
+  "maskableIconUrl": "https://reel.example.com/assets/icon-maskable.png",
+  "appVersionName": "1.0.0",
+  "appVersionCode": 1,
+  "shortcuts": [],
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "reel"
+  },
+  "enableNotifications": false,
+  "fallbackType": "customtabs",
+  "features": {}
+}
